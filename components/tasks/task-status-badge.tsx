@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import { TaskStatus } from "@prisma/client";
+import { TaskStatus } from "@/lib/generated/prisma";
 
 const statusConfig: Record<
   TaskStatus,

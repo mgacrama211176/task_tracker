@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { TaskStatus } from "@prisma/client";
+import { TaskStatus } from "@/lib/generated/prisma";
 
 // ─── Validation schemas ──────────────────────────────────────────────────────
 
