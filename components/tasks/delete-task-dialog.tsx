@@ -1,6 +1,5 @@
 "use client";
 
-import { useTransition } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -12,8 +11,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { deleteTask } from "@/lib/actions/tasks";
-import type { TaskWithComputed } from "@/lib/actions/tasks";
-import { toast } from "sonner";
+import type { TaskWithComputed } from "@/lib/types/task";
+import { useServerAction } from "@/lib/hooks/use-server-action";
+import { TOAST_MESSAGES } from "@/lib/constants/task";
 
 interface DeleteTaskDialogProps {
   task: TaskWithComputed | null;
@@ -21,21 +21,19 @@ interface DeleteTaskDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-export function DeleteTaskDialog({ task, open, onOpenChange }: DeleteTaskDialogProps) {
-  const [isPending, startTransition] = useTransition();
+export function DeleteTaskDialog({
+  task,
+  open,
+  onOpenChange,
+}: DeleteTaskDialogProps) {
+  const { execute, isPending } = useServerAction(deleteTask, {
+    successMessage: TOAST_MESSAGES.taskDeleted,
+    onSuccess: () => onOpenChange(false),
+  });
 
   function handleDelete() {
     if (!task) return;
-
-    startTransition(async () => {
-      const result = await deleteTask(task.id);
-      if (result.success) {
-        toast.success("Task deleted");
-        onOpenChange(false);
-      } else {
-        toast.error(result.error);
-      }
-    });
+    execute(task.id);
   }
 
   return (
@@ -45,8 +43,10 @@ export function DeleteTaskDialog({ task, open, onOpenChange }: DeleteTaskDialogP
           <AlertDialogTitle>Delete task?</AlertDialogTitle>
           <AlertDialogDescription>
             This will permanently delete{" "}
-            <span className="font-semibold">&quot;{task?.name}&quot;</span> and all its
-            timer data. This action cannot be undone.
+            <span className="font-semibold">
+              &quot;{task?.name}&quot;
+            </span>{" "}
+            and all its timer data. This action cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

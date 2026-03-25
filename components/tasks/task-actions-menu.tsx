@@ -1,6 +1,5 @@
 "use client";
 
-import { useTransition } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -8,11 +7,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Pencil, Trash2, RotateCcw, CheckCircle } from "lucide-react";
-import { deleteTask, completeTask, resetTask } from "@/lib/actions/tasks";
-import type { TaskWithComputed } from "@/lib/actions/tasks";
-import { toast } from "sonner";
+import {
+  MoreHorizontal,
+  Pencil,
+  Trash2,
+  RotateCcw,
+  CheckCircle,
+} from "lucide-react";
+import { completeTask, resetTask } from "@/lib/actions/tasks";
+import type { TaskWithComputed } from "@/lib/types/task";
+import { useServerAction } from "@/lib/hooks/use-server-action";
+import { TOAST_MESSAGES } from "@/lib/constants/task";
 
 interface TaskActionsMenuProps {
   task: TaskWithComputed;
@@ -20,30 +25,19 @@ interface TaskActionsMenuProps {
   onDeleteConfirm: () => void;
 }
 
-export function TaskActionsMenu({ task, onEdit, onDeleteConfirm }: TaskActionsMenuProps) {
-  const [isPending, startTransition] = useTransition();
+export function TaskActionsMenu({
+  task,
+  onEdit,
+  onDeleteConfirm,
+}: TaskActionsMenuProps) {
+  const complete = useServerAction(completeTask, {
+    successMessage: TOAST_MESSAGES.taskMarkedDone,
+  });
+  const reset = useServerAction(resetTask, {
+    successMessage: TOAST_MESSAGES.taskTimerReset,
+  });
 
-  function handleComplete() {
-    startTransition(async () => {
-      const result = await completeTask(task.id);
-      if (result.success) {
-        toast.success("Task marked as completed");
-      } else {
-        toast.error(result.error);
-      }
-    });
-  }
-
-  function handleReset() {
-    startTransition(async () => {
-      const result = await resetTask(task.id);
-      if (result.success) {
-        toast.success("Task timer reset");
-      } else {
-        toast.error(result.error);
-      }
-    });
-  }
+  const isPending = complete.isPending || reset.isPending;
 
   return (
     <DropdownMenu>
@@ -59,14 +53,14 @@ export function TaskActionsMenu({ task, onEdit, onDeleteConfirm }: TaskActionsMe
           <Pencil className="mr-2 h-4 w-4" />
           Edit
         </DropdownMenuItem>
-        {task.status !== "COMPLETED" && (
-          <DropdownMenuItem onClick={handleComplete}>
+        {task.status !== "DONE" && (
+          <DropdownMenuItem onClick={() => complete.execute(task.id)}>
             <CheckCircle className="mr-2 h-4 w-4" />
             Mark complete
           </DropdownMenuItem>
         )}
         {task.status !== "NOT_STARTED" && (
-          <DropdownMenuItem onClick={handleReset}>
+          <DropdownMenuItem onClick={() => reset.execute(task.id)}>
             <RotateCcw className="mr-2 h-4 w-4" />
             Reset timer
           </DropdownMenuItem>

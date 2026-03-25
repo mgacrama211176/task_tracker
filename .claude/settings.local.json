@@ -3,7 +3,15 @@
     "allow": [
       "Bash(npx prisma:*)",
       "Bash(npm install:*)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(wc:*)",
+      "Bash(find /c/Users/Gacrama/developer/task_tracker -maxdepth 3 -not -path */node_modules/* -not -path */.next/* -not -path */.git/* -type d)",
+      "mcp__shadcn__search_items_in_registries",
+      "mcp__shadcn__view_items_in_registries",
+      "Bash(npx next:*)",
+      "Bash(grep -E \"\\\\.\\(ts|js|json\\)$\")",
+      "Bash(node:*)",
+      "Bash(curl:*)"
     ]
   }
 }

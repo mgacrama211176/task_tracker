@@ -2,6 +2,46 @@
 
 Rules and guidelines for AI agents working in this repository.
 
+---
+
+## Orchestration — Parallel Sub-Agent Execution
+
+The main agent acts as an **orchestrator**. It MUST delegate work to sub-agents aggressively and run a **minimum of 3 sub-agents in parallel** whenever the task allows it.
+
+### Core Rules
+
+1. **Minimum 3 concurrent agents.** When a task involves multiple independent workstreams (e.g., frontend + backend + research, or editing file A + file B + file C), launch at least 3 sub-agents simultaneously in a single message. Do not serialize work that can be parallelized.
+2. **The orchestrator directs, sub-agents execute.** The main agent should:
+   - Analyze the task and decompose it into parallel workstreams
+   - Assign each workstream to a sub-agent with a clear, complete prompt
+   - Synthesize results from sub-agents into a cohesive response or next step
+   - Never duplicate work that a sub-agent is already handling
+3. **Agent type selection.** Match agent types to the work:
+   - `Explore` — codebase research, file discovery, architecture questions
+   - `Plan` — implementation strategy, architectural decisions
+   - `general-purpose` — code changes, multi-step tasks, complex operations
+4. **Prompts must be self-contained.** Each sub-agent starts fresh with no prior context. Include all necessary details: file paths, conventions, constraints, and the exact deliverable expected.
+5. **Parallel-first mindset.** Before starting any multi-file or multi-concern task, ask: "Can I split this into 3+ independent pieces?" If yes, launch them together. Examples:
+   - Feature implementation: research existing patterns + scaffold component + write server action
+   - Bug fix: investigate root cause in backend + check frontend usage + review test coverage
+   - Refactor: analyze current usage + identify affected files + draft migration plan
+
+### When NOT to Parallelize
+
+- Tasks with strict sequential dependencies (step 2 requires step 1's output)
+- Single-file, single-concern edits where splitting adds overhead
+- When the user explicitly requests step-by-step execution
+
+### Orchestration Patterns
+
+| Scenario | Agent Split |
+|---|---|
+| New feature | `Explore` (existing patterns) + `Plan` (design) + `general-purpose` (scaffold) |
+| Bug fix | `Explore` (root cause) + `Explore` (related code) + `general-purpose` (fix) |
+| Code review / audit | `Explore` (frontend) + `Explore` (backend) + `Explore` (tests/config) |
+| Large refactor | `Plan` (strategy) + `Explore` (impact analysis) + `Explore` (dependency map) |
+| New page/route | `general-purpose` (page component) + `general-purpose` (server action) + `Explore` (UI patterns) |
+
 <!-- BEGIN:nextjs-agent-rules -->
 # This is NOT the Next.js you know
 

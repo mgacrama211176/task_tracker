@@ -5,6 +5,8 @@ import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
+import { DEBOUNCE_MS } from "@/lib/constants/task";
 
 export function TaskSearch() {
   const router = useRouter();
@@ -13,23 +15,20 @@ export function TaskSearch() {
 
   const initialSearch = searchParams.get("search") ?? "";
   const [value, setValue] = useState(initialSearch);
+  const debouncedValue = useDebouncedValue(value, DEBOUNCE_MS);
   const [, startTransition] = useTransition();
 
   useEffect(() => {
-    const handler = setTimeout(() => {
-      const params = new URLSearchParams(searchParams.toString());
-      if (value) {
-        params.set("search", value);
-      } else {
-        params.delete("search");
-      }
-      startTransition(() => {
-        router.replace(`${pathname}?${params.toString()}`);
-      });
-    }, 300);
-
-    return () => clearTimeout(handler);
-  }, [value, pathname, router]); // eslint-disable-line react-hooks/exhaustive-deps
+    const params = new URLSearchParams(searchParams.toString());
+    if (debouncedValue) {
+      params.set("search", debouncedValue);
+    } else {
+      params.delete("search");
+    }
+    startTransition(() => {
+      router.replace(`${pathname}?${params.toString()}`);
+    });
+  }, [debouncedValue, pathname, router]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="relative flex-1 max-w-sm">

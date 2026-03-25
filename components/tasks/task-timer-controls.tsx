@@ -1,52 +1,36 @@
 "use client";
 
-import { useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Play, Pause, Square } from "lucide-react";
-import { startTask, pauseTask, resumeTask, completeTask } from "@/lib/actions/tasks";
-import type { TaskWithComputed } from "@/lib/actions/tasks";
-import { toast } from "sonner";
+import {
+  startTask,
+  pauseTask,
+  resumeTask,
+  completeTask,
+} from "@/lib/actions/tasks";
+import type { TaskWithComputed } from "@/lib/types/task";
+import { useServerAction } from "@/lib/hooks/use-server-action";
+import { TIMER_BUTTON_STYLES, TOAST_MESSAGES } from "@/lib/constants/task";
 
 interface TaskTimerControlsProps {
   task: TaskWithComputed;
 }
 
 export function TaskTimerControls({ task }: TaskTimerControlsProps) {
-  const [isPending, startTransition] = useTransition();
+  const start = useServerAction(startTask);
+  const pause = useServerAction(pauseTask);
+  const resume = useServerAction(resumeTask);
+  const complete = useServerAction(completeTask, {
+    successMessage: TOAST_MESSAGES.taskDone,
+  });
 
-  function handleStart() {
-    startTransition(async () => {
-      const result = await startTask(task.id);
-      if (!result.success) toast.error(result.error);
-    });
-  }
+  const isPending =
+    start.isPending ||
+    pause.isPending ||
+    resume.isPending ||
+    complete.isPending;
 
-  function handlePause() {
-    startTransition(async () => {
-      const result = await pauseTask(task.id);
-      if (!result.success) toast.error(result.error);
-    });
-  }
-
-  function handleResume() {
-    startTransition(async () => {
-      const result = await resumeTask(task.id);
-      if (!result.success) toast.error(result.error);
-    });
-  }
-
-  function handleComplete() {
-    startTransition(async () => {
-      const result = await completeTask(task.id);
-      if (result.success) {
-        toast.success("Task completed");
-      } else {
-        toast.error(result.error);
-      }
-    });
-  }
-
-  if (task.status === "COMPLETED") {
+  if (task.status === "DONE") {
     return (
       <span className="text-xs text-muted-foreground font-medium px-2 py-1 bg-muted rounded-md">
         Done
@@ -60,21 +44,21 @@ export function TaskTimerControls({ task }: TaskTimerControlsProps) {
         <Button
           size="icon"
           variant="ghost"
-          className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50"
-          onClick={handleStart}
+          className={TIMER_BUTTON_STYLES.play}
+          onClick={() => start.execute(task.id)}
           disabled={isPending}
           title="Start timer"
         >
           <Play className="h-4 w-4 fill-current" />
         </Button>
       )}
-      {task.status === "RUNNING" && (
+      {task.status === "IN_PROGRESS" && (
         <>
           <Button
             size="icon"
             variant="ghost"
-            className="h-8 w-8 text-amber-600 hover:text-amber-700 hover:bg-amber-50"
-            onClick={handlePause}
+            className={TIMER_BUTTON_STYLES.pause}
+            onClick={() => pause.execute(task.id)}
             disabled={isPending}
             title="Pause timer"
           >
@@ -83,8 +67,8 @@ export function TaskTimerControls({ task }: TaskTimerControlsProps) {
           <Button
             size="icon"
             variant="ghost"
-            className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50"
-            onClick={handleComplete}
+            className={TIMER_BUTTON_STYLES.stop}
+            onClick={() => complete.execute(task.id)}
             disabled={isPending}
             title="Complete task"
           >
@@ -97,8 +81,8 @@ export function TaskTimerControls({ task }: TaskTimerControlsProps) {
           <Button
             size="icon"
             variant="ghost"
-            className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50"
-            onClick={handleResume}
+            className={TIMER_BUTTON_STYLES.play}
+            onClick={() => resume.execute(task.id)}
             disabled={isPending}
             title="Resume timer"
           >
@@ -107,8 +91,8 @@ export function TaskTimerControls({ task }: TaskTimerControlsProps) {
           <Button
             size="icon"
             variant="ghost"
-            className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50"
-            onClick={handleComplete}
+            className={TIMER_BUTTON_STYLES.stop}
+            onClick={() => complete.execute(task.id)}
             disabled={isPending}
             title="Complete task"
           >
