@@ -18,6 +18,15 @@ import { DeleteTaskDialog } from "./delete-task-dialog";
 import type { TaskWithComputed } from "@/lib/actions/tasks";
 import { ClipboardList } from "lucide-react";
 
+function formatDate(date: Date): string {
+  return new Date(date).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 interface TaskListProps {
   tasks: TaskWithComputed[];
 }
@@ -47,6 +56,8 @@ export function TaskList({ tasks }: TaskListProps) {
               <TableHead className="hidden sm:table-cell">Description</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Time</TableHead>
+              <TableHead className="hidden md:table-cell">Created</TableHead>
+              <TableHead className="hidden md:table-cell">Updated</TableHead>
               <TableHead className="w-[50px]"></TableHead>
             </TableRow>
           </TableHeader>
@@ -86,6 +97,16 @@ export function TaskList({ tasks }: TaskListProps) {
                         : "text-foreground"
                     }`}
                   />
+                </TableCell>
+                <TableCell className="hidden md:table-cell">
+                  <span className="text-xs text-muted-foreground whitespace-nowrap">
+                    {formatDate(task.createdAt)}
+                  </span>
+                </TableCell>
+                <TableCell className="hidden md:table-cell">
+                  <span className="text-xs text-muted-foreground whitespace-nowrap">
+                    {formatDate(task.updatedAt)}
+                  </span>
                 </TableCell>
                 <TableCell>
                   <TaskActionsMenu
