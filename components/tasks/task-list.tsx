@@ -14,8 +14,10 @@ import { TaskTimerControls } from "./task-timer-controls";
 import { TaskActionsMenu } from "./task-actions-menu";
 import { TaskForm } from "./task-form";
 import { DeleteTaskDialog } from "./delete-task-dialog";
+import { TaskDetailDialog } from "./task-detail-dialog";
+import { TaskTypeBadge } from "./task-type-badge";
 import { BudgetProgress } from "./budget-progress";
-import type { TaskWithComputed } from "@/lib/types/task";
+import type { TaskWithComputed, Owner } from "@/lib/types/task";
 import { formatBudgetDuration, formatDate } from "@/lib/formatting/time";
 import { useDialogState } from "@/lib/hooks/use-dialog-state";
 import { cn } from "@/lib/utils";
@@ -23,9 +25,11 @@ import { ClipboardList } from "lucide-react";
 
 interface TaskListProps {
   tasks: TaskWithComputed[];
+  owners: Owner[];
 }
 
-export function TaskList({ tasks }: TaskListProps) {
+export function TaskList({ tasks, owners }: TaskListProps) {
+  const detailDialog = useDialogState<TaskWithComputed>();
   const editDialog = useDialogState<TaskWithComputed>();
   const deleteDialog = useDialogState<TaskWithComputed>();
 
@@ -47,9 +51,11 @@ export function TaskList({ tasks }: TaskListProps) {
             <TableRow className="bg-muted/30 hover:bg-muted/30">
               <TableHead className="w-[50px]"></TableHead>
               <TableHead>Task Name</TableHead>
+              <TableHead>Type</TableHead>
               <TableHead className="hidden sm:table-cell">
                 Description
               </TableHead>
+              <TableHead className="hidden sm:table-cell">Owner</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Time</TableHead>
               <TableHead className="hidden sm:table-cell">Budget</TableHead>
@@ -69,19 +75,29 @@ export function TaskList({ tasks }: TaskListProps) {
                     <TaskTimerControls task={task} />
                   </TableCell>
                   <TableCell>
-                    <span
+                    <button
+                      type="button"
+                      onClick={() => detailDialog.open(task)}
                       className={cn(
-                        "font-medium text-sm",
+                        "font-medium text-sm text-left hover:underline cursor-pointer",
                         task.status === "DONE" &&
                           "line-through text-muted-foreground"
                       )}
                     >
                       {task.name}
-                    </span>
+                    </button>
+                  </TableCell>
+                  <TableCell>
+                    <TaskTypeBadge type={task.type} />
                   </TableCell>
                   <TableCell className="hidden sm:table-cell">
                     <span className="text-xs text-muted-foreground truncate max-w-xs block">
                       {task.description || "\u2014"}
+                    </span>
+                  </TableCell>
+                  <TableCell className="hidden sm:table-cell">
+                    <span className="text-sm text-muted-foreground">
+                      {task.owner?.name || "\u2014"}
                     </span>
                   </TableCell>
                   <TableCell>
@@ -141,10 +157,18 @@ export function TaskList({ tasks }: TaskListProps) {
         </Table>
       </div>
 
+      <TaskDetailDialog
+        task={detailDialog.item}
+        open={detailDialog.isOpen}
+        onOpenChange={detailDialog.onOpenChange}
+      />
+
       <TaskForm
+        key={editDialog.item?.id}
         open={editDialog.isOpen}
         onOpenChange={editDialog.onOpenChange}
         task={editDialog.item ?? undefined}
+        owners={owners}
       />
 
       <DeleteTaskDialog

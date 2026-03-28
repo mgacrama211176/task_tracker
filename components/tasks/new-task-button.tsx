@@ -4,8 +4,13 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { TaskForm } from "./task-form";
+import type { Owner } from "@/lib/types/task";
 
-export function NewTaskButton() {
+interface NewTaskButtonProps {
+  owners: Owner[];
+}
+
+export function NewTaskButton({ owners }: NewTaskButtonProps) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -14,7 +19,7 @@ export function NewTaskButton() {
         <Plus className="h-4 w-4" />
         New task
       </Button>
-      <TaskForm open={open} onOpenChange={setOpen} />
+      <TaskForm open={open} onOpenChange={setOpen} owners={owners} />
     </>
   );
 }

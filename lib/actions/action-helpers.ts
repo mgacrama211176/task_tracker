@@ -2,8 +2,10 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import type { ActionResult } from "@/lib/types/action-result";
 import { ok, fail } from "@/lib/types/action-result";
-import type { Task } from "@/lib/generated/prisma";
+import type { Task, Owner } from "@/lib/generated/prisma";
 import { findTaskById } from "@/lib/models/task-repository";
+
+type TaskWithOwner = Task & { owner: Owner | null };
 
 interface WithActionOptions {
   revalidate?: string;
@@ -29,7 +31,7 @@ export async function withAction<T>(
   }
 }
 
-export async function requireTask(id: string): Promise<ActionResult<Task>> {
+export async function requireTask(id: string): Promise<ActionResult<TaskWithOwner>> {
   const task = await findTaskById(id);
   if (!task) return fail("Task not found");
   return ok(task);

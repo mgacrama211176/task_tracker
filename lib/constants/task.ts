@@ -1,4 +1,4 @@
-import type { TaskStatus } from "@/lib/types/task";
+import type { TaskStatus, TaskType } from "@/lib/types/task";
 
 export const DEBOUNCE_MS = 300;
 export const TICK_INTERVAL_MS = 1000;
@@ -57,6 +57,39 @@ export const TIMER_BUTTON_STYLES = {
   pause: "h-8 w-8 text-amber-600 hover:text-amber-700 hover:bg-amber-50",
   stop: "h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50",
 } as const;
+
+export const TASK_TYPE_CONFIG: Record<
+  TaskType,
+  {
+    label: string;
+    className: string;
+  }
+> = {
+  TASK: {
+    label: "Task",
+    className: "bg-blue-100 text-blue-800 border-blue-200",
+  },
+  BUG: {
+    label: "Bug",
+    className: "bg-red-100 text-red-800 border-red-200",
+  },
+  ENHANCEMENT: {
+    label: "Enhancement",
+    className: "bg-purple-100 text-purple-800 border-purple-200",
+  },
+  FEATURE: {
+    label: "Feature",
+    className: "bg-emerald-100 text-emerald-800 border-emerald-200",
+  },
+  BLOCKER: {
+    label: "Blocker",
+    className: "bg-orange-100 text-orange-800 border-orange-200",
+  },
+};
+
+export const TASK_TYPES = Object.entries(TASK_TYPE_CONFIG).map(
+  ([value, config]) => ({ value: value as TaskType, label: config.label })
+);
 
 export const TOAST_MESSAGES = {
   taskCreated: "Task created",

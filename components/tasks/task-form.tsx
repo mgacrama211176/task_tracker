@@ -13,9 +13,12 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { createTask, updateTask } from "@/lib/actions/tasks";
-import type { TaskWithComputed } from "@/lib/types/task";
+import { generateTaskName } from "@/lib/utils/generate-task-name";
+import type { TaskWithComputed, Owner } from "@/lib/types/task";
+import { OwnerCombobox } from "./owner-combobox";
 import { useServerAction } from "@/lib/hooks/use-server-action";
 import { msToHoursMinutes } from "@/lib/formatting/time";
+import type { TaskType } from "@/lib/types/task";
 import {
   BUDGET_PRESETS,
   TOAST_MESSAGES,
@@ -24,17 +27,22 @@ import {
   BUDGET_MAX_HOURS,
   BUDGET_MAX_MINUTES,
   MS_PER_MINUTE,
+  TASK_TYPES,
 } from "@/lib/constants/task";
-import { X } from "lucide-react";
+import { TimerDisplay } from "./timer-display";
+import { Sparkles, X } from "lucide-react";
 
 interface TaskFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   task?: TaskWithComputed;
+  owners: Owner[];
 }
 
-export function TaskForm({ open, onOpenChange, task }: TaskFormProps) {
+export function TaskForm({ open, onOpenChange, task, owners }: TaskFormProps) {
   const [name, setName] = useState(task?.name ?? "");
+  const [type, setType] = useState<TaskType>(task?.type ?? "TASK");
+  const [ownerName, setOwnerName] = useState(task?.owner?.name ?? "");
   const [description, setDescription] = useState(task?.description ?? "");
   const [budgetMs, setBudgetMs] = useState<number | null>(
     task?.budgetMs ?? null
@@ -50,9 +58,15 @@ export function TaskForm({ open, onOpenChange, task }: TaskFormProps) {
 
   const isEditing = !!task;
 
+  function handleGenerate() {
+    setName(generateTaskName({ type, owner: ownerName, description }));
+  }
+
   function resetForm() {
     if (!isEditing) {
       setName("");
+      setType("TASK");
+      setOwnerName("");
       setDescription("");
       setBudgetMs(null);
       setCustomHours("");
@@ -122,12 +136,16 @@ export function TaskForm({ open, onOpenChange, task }: TaskFormProps) {
         id: task.id,
         name: name.trim(),
         description: description.trim() || undefined,
+        type,
+        ownerName: ownerName.trim() || null,
         budgetMs: budgetMs,
       });
     } else {
       create.execute({
         name: name.trim(),
         description: description.trim() || undefined,
+        type,
+        ownerName: ownerName.trim() || undefined,
         budgetMs: budgetMs ?? undefined,
       });
     }
@@ -142,14 +160,53 @@ export function TaskForm({ open, onOpenChange, task }: TaskFormProps) {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="task-name">Task name *</Label>
-            <Input
-              id="task-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Write quarterly report"
-              maxLength={TASK_NAME_MAX_LENGTH}
-              required
-              autoFocus
+            <div className="flex items-center gap-1.5">
+              <Input
+                id="task-name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g. Write quarterly report"
+                maxLength={TASK_NAME_MAX_LENGTH}
+                required
+                autoFocus
+                className="flex-1"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="h-9 w-9 shrink-0"
+                onClick={handleGenerate}
+                disabled={isPending}
+                title="Auto-generate task name"
+              >
+                <Sparkles className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Type</Label>
+            <div className="flex flex-wrap gap-1.5">
+              {TASK_TYPES.map((t) => (
+                <Button
+                  key={t.value}
+                  type="button"
+                  variant={type === t.value ? "default" : "outline"}
+                  size="sm"
+                  className="h-7 px-2.5 text-xs"
+                  onClick={() => setType(t.value)}
+                >
+                  {t.label}
+                </Button>
+              ))}
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Owner</Label>
+            <OwnerCombobox
+              owners={owners}
+              value={ownerName}
+              onChange={setOwnerName}
             />
           </div>
           <div className="space-y-1.5">
@@ -163,6 +220,19 @@ export function TaskForm({ open, onOpenChange, task }: TaskFormProps) {
               rows={3}
             />
           </div>
+          {isEditing && (
+            <div className="space-y-1.5">
+              <Label>Elapsed time</Label>
+              <div className="rounded-md border border-border/60 bg-muted/30 px-3 py-2">
+                <TimerDisplay
+                  accumulatedMs={task.accumulatedMs}
+                  startedAt={task.startedAt}
+                  status={task.status}
+                  className="font-mono font-semibold text-sm tabular-nums text-foreground"
+                />
+              </div>
+            </div>
+          )}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label>Time budget</Label>

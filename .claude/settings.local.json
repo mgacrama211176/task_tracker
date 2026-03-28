@@ -11,7 +11,8 @@
       "Bash(npx next:*)",
       "Bash(grep -E \"\\\\.\\(ts|js|json\\)$\")",
       "Bash(node:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(npx shadcn@latest add popover command -y)"
     ]
   }
 }

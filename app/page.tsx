@@ -1,19 +1,24 @@
 import { Suspense } from "react";
-import { getTasks } from "@/lib/actions/tasks";
+import { getTasks, getOwners } from "@/lib/actions/tasks";
 import { TaskList } from "@/components/tasks/task-list";
 import { TaskSearch } from "@/components/tasks/task-search";
+import { TaskFilters } from "@/components/tasks/task-filters";
 import { NewTaskButton } from "@/components/tasks/new-task-button";
 import { Separator } from "@/components/ui/separator";
 
 interface HomeProps {
-  searchParams: Promise<{ search?: string }>;
+  searchParams: Promise<{ search?: string; type?: string; ownerId?: string; hideDone?: string }>;
 }
 
 export default async function Home({ searchParams }: HomeProps) {
-  const { search } = await searchParams;
+  const { search, type, ownerId, hideDone } = await searchParams;
 
-  const result = await getTasks(search);
-  const tasks = result.success ? result.data : [];
+  const [tasksResult, ownersResult] = await Promise.all([
+    getTasks({ search, type, ownerId, hideDone: hideDone === "true" }),
+    getOwners(),
+  ]);
+  const tasks = tasksResult.success ? tasksResult.data : [];
+  const owners = ownersResult.success ? ownersResult.data : [];
 
   return (
     <div className="min-h-screen bg-background">
@@ -40,14 +45,20 @@ export default async function Home({ searchParams }: HomeProps) {
           <Suspense>
             <TaskSearch />
           </Suspense>
-          <NewTaskButton />
+          <NewTaskButton owners={owners} />
+        </div>
+
+        <div className="mb-4">
+          <Suspense>
+            <TaskFilters owners={owners} />
+          </Suspense>
         </div>
 
         <Separator className="mb-5" />
 
         {/* Task list */}
         <Suspense fallback={<TaskListSkeleton />}>
-          <TaskList tasks={tasks} />
+          <TaskList tasks={tasks} owners={owners} />
         </Suspense>
       </main>
     </div>

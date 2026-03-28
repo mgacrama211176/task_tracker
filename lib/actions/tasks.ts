@@ -4,11 +4,15 @@ import type { ActionResult } from "@/lib/types/action-result";
 import { ok, fail } from "@/lib/types/action-result";
 import type { TaskWithComputed } from "@/lib/types/task";
 import { CreateTaskSchema, UpdateTaskSchema } from "@/lib/schemas/task";
+import type { Owner } from "@/lib/types/task";
 import {
   findTasks,
   insertTask,
   patchTask,
   removeTask,
+  findOwners,
+  findOrCreateOwner,
+  taskNameExists,
 } from "@/lib/models/task-repository";
 import {
   serializeTask,
@@ -26,11 +30,18 @@ export type { TaskWithComputed } from "@/lib/types/task";
 // ─── CRUD Actions ────────────────────────────────────────────────────────────
 
 export async function getTasks(
-  search?: string
+  filters?: { search?: string; type?: string; ownerId?: string; hideDone?: boolean }
 ): Promise<ActionResult<TaskWithComputed[]>> {
   return withAction(async () => {
-    const tasks = await findTasks(search);
+    const tasks = await findTasks(filters);
     return ok(tasks.map(serializeTask));
+  });
+}
+
+export async function getOwners(): Promise<ActionResult<Owner[]>> {
+  return withAction(async () => {
+    const owners = await findOwners();
+    return ok(owners.map((o) => ({ id: o.id, name: o.name })));
   });
 }
 
@@ -45,13 +56,22 @@ export async function getTask(
 }
 
 export async function createTask(
-  formData: { name: string; description?: string; budgetMs?: number }
+  formData: { name: string; description?: string; type?: string; ownerName?: string; budgetMs?: number }
 ): Promise<ActionResult<TaskWithComputed>> {
   return withAction(async () => {
     const validated = CreateTaskSchema.parse(formData);
+    const existing = await taskNameExists(validated.name);
+    if (existing) return fail("Task name already exists");
+    let ownerId: string | null = null;
+    if (validated.ownerName) {
+      const owner = await findOrCreateOwner(validated.ownerName.trim());
+      ownerId = owner.id;
+    }
     const task = await insertTask({
       name: validated.name,
       description: validated.description,
+      type: validated.type,
+      ownerId,
       accumulatedMs: 0,
       budgetMs: validated.budgetMs ?? null,
     });
@@ -60,15 +80,31 @@ export async function createTask(
 }
 
 export async function updateTask(
-  formData: { id: string; name: string; description?: string; budgetMs?: number | null }
+  formData: { id: string; name: string; description?: string; type?: string; ownerName?: string | null; budgetMs?: number | null }
 ): Promise<ActionResult<TaskWithComputed>> {
   return withAction(async () => {
     const validated = UpdateTaskSchema.parse(formData);
     const lookup = await requireTask(validated.id);
     if (!lookup.success) return lookup;
+
+    if (validated.name !== lookup.data.name) {
+      const existing = await taskNameExists(validated.name);
+      if (existing) return fail("Task name already exists");
+    }
+
+    let ownerId: string | null | undefined = undefined;
+    if (validated.ownerName === null) {
+      ownerId = null;
+    } else if (validated.ownerName) {
+      const owner = await findOrCreateOwner(validated.ownerName.trim());
+      ownerId = owner.id;
+    }
+
     const task = await patchTask(validated.id, {
       name: validated.name,
       description: validated.description,
+      ...(validated.type !== undefined && { type: validated.type }),
+      ...(ownerId !== undefined && { ownerId }),
       ...(validated.budgetMs !== undefined && { budgetMs: validated.budgetMs }),
     });
     return ok(serializeTask(task));

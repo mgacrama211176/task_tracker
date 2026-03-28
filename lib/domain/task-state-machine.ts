@@ -1,13 +1,16 @@
-import type { Task } from "@/lib/generated/prisma";
+import type { Task, Owner } from "@/lib/generated/prisma";
 import type { TaskWithComputed } from "@/lib/types/task";
+
+type TaskWithOwner = Task & { owner: Owner | null };
 
 type TransitionResult =
   | { valid: true; data: Record<string, unknown> }
   | { valid: false; error: string };
 
-export function serializeTask(task: Task): TaskWithComputed {
+export function serializeTask(task: TaskWithOwner): TaskWithComputed {
   return {
     ...task,
+    owner: task.owner ? { id: task.owner.id, name: task.owner.name } : null,
     accumulatedMs: Number(task.accumulatedMs),
     budgetMs: task.budgetMs != null ? Number(task.budgetMs) : null,
   };

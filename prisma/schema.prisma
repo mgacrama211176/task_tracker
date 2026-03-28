@@ -14,11 +14,29 @@ enum TaskStatus {
   DONE
 }
 
+enum TaskType {
+  TASK
+  BUG
+  ENHANCEMENT
+  FEATURE
+  BLOCKER
+}
+
+model Owner {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  tasks     Task[]
+}
+
 model Task {
   id             String     @id @default(uuid())
-  name           String
+  name           String     @unique
   description    String?
+  type           TaskType   @default(TASK)
   status         TaskStatus @default(NOT_STARTED)
+  ownerId        String?
+  owner          Owner?     @relation(fields: [ownerId], references: [id])
   startedAt      DateTime?
   pausedAt       DateTime?
   accumulatedMs  BigInt     @default(0)
@@ -27,4 +45,5 @@ model Task {
   updatedAt      DateTime   @updatedAt
 
   @@index([name])
+  @@index([ownerId])
 }
